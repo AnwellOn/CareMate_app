@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KleinPublic</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
+</head>
+<body>
+  <header>
+    <h1>KleinPublic</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="upload.html">Upload</a>
+      <a href="profile.html">Profile</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="createPostSection">
+      <h2>Create a Post</h2>
+      <form id="createPostForm">
+        <label>Title:</label><br>
+        <input type="text" id="createPostTitle" required><br>
+
+        <label>Description:</label><br>
+        <textarea id="createPostDescription" rows="4" required></textarea><br>
+
+        <label>Image URL:</label><br>
+        <input type="url" id="createPostImage" required><br>
+
+        <button type="submit">Create Post</button>
+      </form>
+    </section>
+
+    <section id="postContainer" class="grid"></section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 KleinPublic</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const postContainer = document.getElementById("postContainer");
+
+    // Function to load posts
+    const loadPosts = async () => {
+      const snapshot = await getDocs(collection(db, "posts"));
+      postContainer.innerHTML = ""; // Clear the existing posts
+      snapshot.forEach(doc => {
+        const post = doc.data();
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `
+          <h3>${post.title}</h3>
+          <img src="${post.image}" alt="${post.title}" style="width: 100%; border-radius: 6px;">
+          <p>${post.description}</p>
+          <button onclick="deletePost('${doc.id}')">Delete Post</button>
+        `;
+        postContainer.appendChild(postDiv);
+      });
+    };
+
+    // Function to delete a post
+    window.deletePost = async (postId) => {
+      const postRef = doc(db, "posts", postId);
+      await deleteDoc(postRef);
+      loadPosts(); // Refresh posts after delete
+    };
+
+    // Form to create a new post
+    document.getElementById("createPostForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("createPostTitle").value;
+      const description = document.getElementById("createPostDescription").value;
+      const image = document.getElementById("createPostImage").value;
+
+      try {
+        await addDoc(collection(db, "posts"), {
+          title,
+          description,
+          image
+        });
+        alert("Post created successfully!");
+        loadPosts(); // Reload posts after creating
+      } catch (e) {
+        console.error("Error adding document: ", e);
+        alert("Error creating post");
+      }
+    });
+
+    loadPosts(); // Load posts when the page is loaded
+  </script>
+</body>
+</html>
